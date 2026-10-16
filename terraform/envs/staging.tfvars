@@ -1,7 +1,7 @@
 env                        = "staging"
 bucket_name                = "REPLACE-org-loki-logs-staging"
 vpc_id                     = "vpc-0b7d92fdd0fff8ca8"
-private_subnet_id          = ["subnet-0e24ade94ac40a1f6", "subnet-0b8b303e0938ef738", "subnet-0d0050e8dae73213c"]
+private_subnet_id          = "subnet-0e24ade94ac40a1f6"
 eks_node_security_group_id = "sg-032d003817d49b013"
 grafana_security_group_id  = "sg-0360b0d163cf50ca0"
 instance_type              = "m5.medium"
@@ -10,4 +10,4 @@ loki_memory_max            = "3G"
 ingestion_rate_mb          = 4
 ingestion_burst_mb         = 8
 schema_start_date          = "2026-10-01"
-loki_sha256 = "4b4f17fc9416bd2099dac815ede1aac15aa0f8d1a21225e08909796b99aaad59"
+loki_sha256                = "4b4f17fc9416bd2099dac815ede1aac15aa0f8d1a21225e08909796b99aaad59"
