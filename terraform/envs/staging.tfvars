@@ -1,5 +1,5 @@
 env                        = "staging"
-bucket_name                = "REPLACE-org-loki-logs-staging"
+bucket_name                = "48months-staging-loki-logs"
 vpc_id                     = "vpc-0b7d92fdd0fff8ca8"
 private_subnet_id          = "subnet-0e24ade94ac40a1f6"
 eks_node_security_group_id = "sg-032d003817d49b013"
