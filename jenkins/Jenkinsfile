@@ -1,0 +1,118 @@
+// Loki logging platform: Terraform for the host, bucket and IAM, then the Alloy DaemonSet.
+// Trigger: GitHub webhook via a Multibranch Pipeline. Production needs a manual approval.
+
+def EKS_CLUSTER = [staging: 'REPLACE-staging-eks-cluster', prod: 'prod-green']
+
+pipeline {
+  agent { label 'terraform-helm' }
+
+  parameters {
+    choice(name: 'TARGET_ENV', choices: ['staging', 'prod'], description: 'Target environment')
+    booleanParam(name: 'APPLY_TERRAFORM', defaultValue: false, description: 'Apply the Terraform plan (otherwise plan only)')
+    booleanParam(name: 'DEPLOY_ALLOY', defaultValue: true, description: 'Deploy or upgrade the Alloy DaemonSet')
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    timeout(time: 60, unit: 'MINUTES')
+  }
+
+  environment {
+    AWS_REGION          = 'eu-west-1'
+    TF_IN_AUTOMATION    = 'true'
+    ALLOY_CHART_VERSION = 'REPLACE-pinned-grafana-alloy-chart-version'
+    ALLOY_NAMESPACE     = 'monitoring'
+  }
+
+  stages {
+    stage('Validate') {
+      steps {
+        dir('terraform') {
+          sh 'terraform fmt -check -recursive'
+          sh 'terraform init -backend=false -input=false'
+          sh 'terraform validate'
+        }
+        sh '''
+          helm repo add grafana https://grafana.github.io/helm-charts >/dev/null
+          helm repo update >/dev/null
+          helm template alloy grafana/alloy --version "$ALLOY_CHART_VERSION" \
+            -n "$ALLOY_NAMESPACE" -f helm/alloy/values-${TARGET_ENV}.yaml \
+            --set-file alloy.configMap.content=helm/alloy/config.alloy > /tmp/alloy-rendered.yaml
+        '''
+      }
+    }
+
+    stage('Terraform plan') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${TARGET_ENV}"]]) {
+          dir('terraform') {
+            sh "terraform init -input=false -reconfigure -backend-config=envs/${TARGET_ENV}.backend.hcl"
+            sh "terraform plan -input=false -var-file=envs/${TARGET_ENV}.tfvars -out=tfplan-${TARGET_ENV}"
+            sh "terraform show -no-color tfplan-${TARGET_ENV} > plan.txt"
+            archiveArtifacts artifacts: 'plan.txt, tfplan-*', fingerprint: true
+          }
+        }
+      }
+    }
+
+    stage('Approval (prod)') {
+      when {
+        allOf {
+          expression { params.APPLY_TERRAFORM }
+          expression { params.TARGET_ENV == 'prod' }
+        }
+      }
+      steps {
+        input message: 'Apply the Terraform plan to PRODUCTION? Check plan.txt in the build artifacts first.', ok: 'Apply'
+      }
+    }
+
+    stage('Terraform apply') {
+      when { expression { params.APPLY_TERRAFORM } }
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${TARGET_ENV}"]]) {
+          dir('terraform') {
+            sh "terraform init -input=false -reconfigure -backend-config=envs/${TARGET_ENV}.backend.hcl"
+            sh "terraform apply -input=false tfplan-${TARGET_ENV}"
+          }
+        }
+      }
+    }
+
+    stage('Deploy Alloy') {
+      when { expression { params.DEPLOY_ALLOY } }
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${TARGET_ENV}"]]) {
+          sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER[params.TARGET_ENV]}"
+          sh '''
+            helm upgrade --install alloy grafana/alloy --version "$ALLOY_CHART_VERSION" \
+              -n "$ALLOY_NAMESPACE" --create-namespace \
+              -f helm/alloy/values-${TARGET_ENV}.yaml \
+              --set-file alloy.configMap.content=helm/alloy/config.alloy \
+              --wait --timeout 5m
+            kubectl -n "$ALLOY_NAMESPACE" rollout status ds/alloy --timeout=5m
+          '''
+        }
+      }
+    }
+
+    stage('Smoke test') {
+      when { expression { params.APPLY_TERRAFORM } }
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${TARGET_ENV}"]]) {
+          dir('terraform') {
+            sh "terraform init -input=false -reconfigure -backend-config=envs/${TARGET_ENV}.backend.hcl"
+            sh 'curl -fsS --max-time 10 "$(terraform output -raw loki_ready_url)"'
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      cleanWs(deleteDirs: true, patterns: [[pattern: '**/tfplan-*', type: 'INCLUDE']])
+    }
+  }
+}

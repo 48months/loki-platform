@@ -1,0 +1,40 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y unzip
+
+id loki >/dev/null 2>&1 || useradd --system --no-create-home --shell /sbin/nologin loki
+mkdir -p /etc/loki /var/lib/loki
+chown -R loki:loki /var/lib/loki
+
+cd /tmp
+curl -fsSLO "https://github.com/grafana/loki/releases/download/v${loki_version}/loki-linux-amd64.zip"
+echo "${loki_sha256}  loki-linux-amd64.zip" | sha256sum -c -
+unzip -o loki-linux-amd64.zip -d /tmp/loki-unpack
+install -m 0755 /tmp/loki-unpack/loki-linux-amd64 /usr/local/bin/loki
+
+echo "${config_base64}" | base64 -d > /etc/loki/config.yaml
+chown root:loki /etc/loki/config.yaml
+chmod 0640 /etc/loki/config.yaml
+
+cat > /etc/systemd/system/loki.service <<'UNIT'
+[Unit]
+Description=Grafana Loki (monolithic, -target=all)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=loki
+Group=loki
+ExecStart=/usr/local/bin/loki -config.file=/etc/loki/config.yaml -target=all
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+MemoryMax=${memory_max}
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now loki

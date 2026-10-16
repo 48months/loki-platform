@@ -1,0 +1,13 @@
+env                        = "staging"
+bucket_name                = "REPLACE-org-loki-logs-staging"
+vpc_id                     = "vpc-REPLACE"
+private_subnet_id          = "subnet-REPLACE"
+eks_node_security_group_id = "sg-REPLACE-eks-nodes"
+grafana_security_group_id  = "sg-REPLACE-grafana"
+instance_type              = "m5.medium"
+disk_gb                    = 50
+loki_memory_max            = "3G"
+ingestion_rate_mb          = 4
+ingestion_burst_mb         = 8
+schema_start_date          = "2026-10-01"
+loki_sha256                = "REPLACE-with-sha256-of-loki-linux-amd64.zip"

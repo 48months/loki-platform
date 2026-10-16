@@ -1,0 +1,49 @@
+# Loki monolithic configuration. Rendered by Terraform, do not edit on the host.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /var/lib/loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+  storage:
+    s3:
+      region: ${region}
+      bucketnames: ${bucket}
+
+schema_config:
+  configs:
+    - from: "${schema_start_date}"
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /var/lib/loki/tsdb-index
+    cache_location: /var/lib/loki/tsdb-cache
+
+compactor:
+  working_directory: /var/lib/loki/compactor
+  retention_enabled: true
+  delete_request_store: s3
+
+limits_config:
+  retention_period: ${retention_hours}h
+  ingestion_rate_mb: ${ingestion_rate_mb}
+  ingestion_burst_size_mb: ${ingestion_burst_mb}
+  max_query_length: ${retention_hours}h
+  max_query_parallelism: 4
+  max_entries_limit_per_query: 5000
+
+analytics:
+  reporting_enabled: false
