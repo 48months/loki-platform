@@ -27,7 +27,7 @@ alloy:
     - name: LOKI_PUSH_URL
       value: "REPLACE-loki-push-url-from-terraform-output"
     - name: LOG_NAMESPACE_REGEX
-      value: "REPLACE-namespace-regex-for-this-wave"
+      value: "^staging$"
 
 tolerations:
   - operator: Exists
