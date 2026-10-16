@@ -58,7 +58,7 @@ variable "disk_gb" {
 variable "loki_version" {
   description = "Pinned Loki release (without the leading v). Confirm the version before first apply."
   type        = string
-  default     = "3.4.2"
+  default     = "3.7.4"
 }
 
 variable "loki_sha256" {
