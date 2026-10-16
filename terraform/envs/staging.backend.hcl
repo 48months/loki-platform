@@ -1,4 +1,4 @@
-bucket       = "REPLACE-org-terraform-state"
+bucket       = "48months-staging-loki-logs"
 key          = "loki/staging/terraform.tfstate"
 region       = "eu-west-1"
 encrypt      = true
