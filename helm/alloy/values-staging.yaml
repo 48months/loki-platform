@@ -1,4 +1,4 @@
-# Grafana Alloy values for staging. Chart version is pinned in the Jenkinsfile.
+# Grafana Alloy values for staging. Chart version and cluster name are in versions.env.
 controller:
   type: daemonset
 
