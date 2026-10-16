@@ -1,7 +1,7 @@
 env                        = "staging"
 bucket_name                = "REPLACE-org-loki-logs-staging"
-vpc_id                     = "vpc-REPLACE"
-private_subnet_id          = "subnet-REPLACE"
+vpc_id                     = "vpc-0b7d92fdd0fff8ca8"
+private_subnet_id          = [ "subnet-0e24ade94ac40a1f6", "subnet-0b8b303e0938ef738", "subnet-0d0050e8dae73213c"]
 eks_node_security_group_id = "sg-REPLACE-eks-nodes"
 grafana_security_group_id  = "sg-REPLACE-grafana"
 instance_type              = "m5.medium"
