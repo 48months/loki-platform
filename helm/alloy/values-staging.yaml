@@ -1,0 +1,39 @@
+# Grafana Alloy values for staging. Chart version is pinned in the Jenkinsfile.
+controller:
+  type: daemonset
+
+alloy:
+  configMap:
+    create: true
+    # content is set at deploy time with --set-file alloy.configMap.content=config.alloy
+
+  mounts:
+    varlog: true
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: CLUSTER_NAME
+      value: "staging"
+    - name: LOKI_PUSH_URL
+      value: "REPLACE-loki-push-url-from-terraform-output"
+    - name: LOG_NAMESPACE_REGEX
+      value: "REPLACE-namespace-regex-for-this-wave"
+
+tolerations:
+  - operator: Exists
+
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
