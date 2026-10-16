@@ -10,4 +10,4 @@ loki_memory_max            = "3G"
 ingestion_rate_mb          = 4
 ingestion_burst_mb         = 8
 schema_start_date          = "2026-10-01"
-loki_sha256                = "REPLACE-with-sha256-of-loki-linux-amd64.zip"
+loki_sha256 = "4b4f17fc9416bd2099dac815ede1aac15aa0f8d1a21225e08909796b99aaad59"
