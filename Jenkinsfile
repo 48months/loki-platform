@@ -33,7 +33,7 @@ pipeline {
             }
             sh "terraform plan -input=false -var-file=envs/${params.TARGET_ENV}.tfvars -out=tfplan"
             sh 'terraform show -no-color tfplan > plan.txt'
-            archiveArtifacts artifacts: 'terraform/plan.txt', fingerprint: true
+            archiveArtifacts artifacts: 'plan.txt', fingerprint: true
           }
         }
       }
