@@ -20,7 +20,7 @@ pipeline {
     AWS_DEFAULT_REGION = 'eu-west-1'
     TF_IN_AUTOMATION   = 'true'
     TARGET             = "${params.TARGET_ENV}"
-    AWS_CREDS_ID       = (params.TARGET_ENV == 'prod' ? 'aws-prod' : 'aws_non_prod')
+    AWS_CREDS_ID       = "${params.TARGET_ENV == 'prod' ? 'aws-prod' : 'aws_non_prod'}"
   }
 
   stages {
