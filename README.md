@@ -1,18 +1,18 @@
 # Loki Logging Setup on EKS Cluster
 
 ## Overview
-This document describes the centralized logging solution implemented using Grafana Loki for log aggregation and Grafana for log visualization.
+Provides centralized log collection, storage, and visualization for Amazon EKS workloads.
 
 ## Components
 
 - Grafana Alloy (Ships K8's container logs & metrics to Loki)
-- Grafana Loki (Log Storage & Query Engine)
-- Grafana UI (Log Visualization & Dashboards)
-- Amazon S3 (Long-term Log Storage)
+- Grafana Loki (Log Storage & aggregation)
+- Grafana UI (Log exploration and visualization)
+- Amazon S3 (Log retention and archival)
 
 ## Architecture
 
-EKS → Grafana Alloy → Grafana Loki → S3  
+EKS → Grafana Alloy → Grafana Loki → S3 bucket 
 Grafana UI → Grafana Loki
 
 ## Benefits
