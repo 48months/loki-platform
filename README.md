@@ -5,7 +5,7 @@ This document describes the centralized logging solution implemented using Grafa
 
 ## Components
 
-- Grafana Alloy (Ship K8's container logs & metrics to Loki)
+- Grafana Alloy (Ships K8's container logs & metrics to Loki)
 - Grafana Loki (Log Storage & Query Engine)
 - Grafana UI (Log Visualization & Dashboards)
 - Amazon S3 (Long-term Log Storage)
