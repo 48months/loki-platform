@@ -1,3 +1,13 @@
-# Loki logging (staging)
+# Loki Logging Stack
 
-Loki runs on one EC2 instance (m5.medium) in monolithic mode. Logs are stored in S3 for 90 days. Grafana Alloy runs on the EKS nodes and sends logs to Loki.
+**Purpose:** Centralized log aggregation for EKS workloads.
+
+**Flow:**  
+EKS Pods → Fluent Bit → Loki → S3  
+Grafana → Loki
+
+**Infrastructure**
+- Staging: `m8g.medium`, `20 GB EBS`
+- Production: `m8g.large`, `50 GB EBS`
+- Log Retention: `90 Days`
+- Storage: `Amazon S3`
