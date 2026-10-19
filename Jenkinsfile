@@ -22,7 +22,7 @@ pipeline {
   stages {
     stage('Terraform plan') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${params.TARGET_ENV}"]]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: (params.TARGET_ENV == 'prod' ? 'aws-prod' : 'aws_non_prod')]]) {
           dir('terraform') {
             sh "terraform init -input=false -reconfigure -backend-config=envs/${params.TARGET_ENV}.backend.hcl"
             script {
@@ -54,7 +54,7 @@ pipeline {
     stage('Terraform apply') {
       when { expression { params.APPLY_TERRAFORM } }
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${params.TARGET_ENV}"]]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: (params.TARGET_ENV == 'prod' ? 'aws-prod' : 'aws_non_prod')]]) {
           dir('terraform') {
             sh 'terraform apply -input=false tfplan'
             sh 'echo "Loki push URL: $(terraform output -raw loki_push_url)"'
@@ -69,7 +69,7 @@ pipeline {
         TARGET = "${params.TARGET_ENV}"
       }
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "aws-${params.TARGET_ENV}"]]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: (params.TARGET_ENV == 'prod' ? 'aws-prod' : 'aws_non_prod')]]) {
           sh '''
             . helm/alloy/versions.env
             if [ "$TARGET" = "prod" ]; then CLUSTER="$EKS_CLUSTER_PROD"; else CLUSTER="$EKS_CLUSTER_STAGING"; fi
