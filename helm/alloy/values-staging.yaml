@@ -25,7 +25,7 @@ alloy:
     - name: CLUSTER_NAME
       value: "staging"
     - name: LOKI_PUSH_URL
-      value: "REPLACE-loki-push-url-from-terraform-output"
+      value: "http://13.41.18.169:3100/loki/api/v1/push"
     - name: LOG_NAMESPACE_REGEX
       value: "^staging$"
 
