@@ -36,13 +36,13 @@ pipeline {
       }
     }
 
-    // ---------------- Loki host (Terraform) ----------------
+    // ---------------- Loki Setup (Terraform) ----------------
 
-    stage('Loki plan') {
+    stage('Loki Setup - plan') {
       when { expression { params.ACTION in ['loki-plan', 'loki-apply'] } }
       steps {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDS_ID]]) {
-          dir('terraform') {
+          dir('loki-setup') {
             sh "terraform init -input=false -reconfigure -backend-config=envs/${params.TARGET_ENV}.backend.hcl"
             script {
               def inState = sh(script: "terraform state list | grep -q '^aws_s3_bucket.loki\$'", returnStatus: true) == 0
@@ -59,7 +59,7 @@ pipeline {
       }
     }
 
-    stage('Loki apply') {
+    stage('Loki Setup - apply') {
       when { expression { params.ACTION == 'loki-apply' } }
       steps {
         script {
@@ -68,7 +68,7 @@ pipeline {
           }
         }
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDS_ID]]) {
-          dir('terraform') {
+          dir('loki-setup') {
             sh 'terraform apply -input=false tfplan'
             sh 'echo "Loki push URL: $(terraform output -raw loki_push_url)"'
             sh 'echo "Loki private IP: $(terraform output -raw loki_private_ip)"'
@@ -77,7 +77,7 @@ pipeline {
       }
     }
 
-    stage('Loki destroy') {
+    stage('Loki Setup - destroy') {
       when { expression { params.ACTION == 'loki-destroy' } }
       steps {
         script {
@@ -86,7 +86,7 @@ pipeline {
           }
         }
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDS_ID]]) {
-          dir('terraform') {
+          dir('loki-setup') {
             sh "terraform init -input=false -reconfigure -backend-config=envs/${params.TARGET_ENV}.backend.hcl"
             sh "terraform destroy -input=false -auto-approve -target=aws_instance.loki -var-file=envs/${params.TARGET_ENV}.tfvars"
             sh 'echo "Loki instance destroyed. Bucket, IAM role and security group were kept."'
@@ -95,20 +95,20 @@ pipeline {
       }
     }
 
-    // ---------------- Alloy (Helm) ----------------
+    // ---------------- Grafana Alloy (Helm) ----------------
 
-    stage('Alloy plan') {
+    stage('Grafana Alloy - plan') {
       when { expression { params.ACTION in ['alloy-plan', 'alloy-deploy'] } }
       steps {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDS_ID]]) {
           sh '''
             set -eu
-            . helm/alloy/versions.env
+            . grafana-alloy/versions.env
             if [ "$TARGET" = "prod" ]; then CLUSTER="$EKS_CLUSTER_PROD"; else CLUSTER="$EKS_CLUSTER_STAGING"; fi
             aws eks update-kubeconfig --region eu-west-1 --name "$CLUSTER"
             helm repo add grafana https://grafana.github.io/helm-charts --force-update
             helm repo update
-            helm upgrade --install alloy grafana/alloy --version "$ALLOY_CHART_VERSION" -n "$ALLOY_NAMESPACE" --create-namespace -f helm/alloy/values-$TARGET.yaml --set-file alloy.configMap.content=helm/alloy/config.alloy --dry-run > alloy-plan.txt
+            helm upgrade --install alloy grafana/alloy --version "$ALLOY_CHART_VERSION" -n "$ALLOY_NAMESPACE" --create-namespace -f grafana-alloy/values-$TARGET.yaml --set-file alloy.configMap.content=grafana-alloy/config.alloy --dry-run > alloy-plan.txt
             echo "Alloy plan written to alloy-plan.txt"
             helm list -n "$ALLOY_NAMESPACE"
           '''
@@ -117,7 +117,7 @@ pipeline {
       }
     }
 
-    stage('Alloy deploy') {
+    stage('Grafana Alloy - deploy') {
       when { expression { params.ACTION == 'alloy-deploy' } }
       steps {
         script {
@@ -128,12 +128,12 @@ pipeline {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDS_ID]]) {
           sh '''
             set -eu
-            . helm/alloy/versions.env
+            . grafana-alloy/versions.env
             if [ "$TARGET" = "prod" ]; then CLUSTER="$EKS_CLUSTER_PROD"; else CLUSTER="$EKS_CLUSTER_STAGING"; fi
             aws eks update-kubeconfig --region eu-west-1 --name "$CLUSTER"
             helm repo add grafana https://grafana.github.io/helm-charts --force-update
             helm repo update
-            helm upgrade --install alloy grafana/alloy --version "$ALLOY_CHART_VERSION" -n "$ALLOY_NAMESPACE" --create-namespace -f helm/alloy/values-$TARGET.yaml --set-file alloy.configMap.content=helm/alloy/config.alloy --wait --timeout 5m
+            helm upgrade --install alloy grafana/alloy --version "$ALLOY_CHART_VERSION" -n "$ALLOY_NAMESPACE" --create-namespace -f grafana-alloy/values-$TARGET.yaml --set-file alloy.configMap.content=grafana-alloy/config.alloy --wait --timeout 5m
             echo "--- Helm status ---"
             helm status alloy -n "$ALLOY_NAMESPACE"
             echo "--- DaemonSet status ---"
@@ -144,7 +144,7 @@ pipeline {
       }
     }
 
-    stage('Alloy remove') {
+    stage('Grafana Alloy - remove') {
       when { expression { params.ACTION == 'alloy-remove' } }
       steps {
         script {
@@ -155,7 +155,7 @@ pipeline {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDS_ID]]) {
           sh '''
             set -eu
-            . helm/alloy/versions.env
+            . grafana-alloy/versions.env
             if [ "$TARGET" = "prod" ]; then CLUSTER="$EKS_CLUSTER_PROD"; else CLUSTER="$EKS_CLUSTER_STAGING"; fi
             aws eks update-kubeconfig --region eu-west-1 --name "$CLUSTER"
             helm uninstall alloy -n "$ALLOY_NAMESPACE" || echo "Alloy release was not installed"
