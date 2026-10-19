@@ -3,7 +3,6 @@ pipeline {
 
   parameters {
     choice(name: 'TARGET_ENV', choices: ['staging', 'prod'], description: 'Target environment')
-    booleanParam(name: 'RUN_IMPORT', defaultValue: false, description: 'One-time: import the existing Loki bucket into Terraform state')
     booleanParam(name: 'APPLY_TERRAFORM', defaultValue: false, description: 'Apply the Terraform plan')
     booleanParam(name: 'DEPLOY_ALLOY', defaultValue: false, description: 'Deploy or upgrade Alloy on the cluster')
   }
@@ -26,7 +25,8 @@ pipeline {
           dir('terraform') {
             sh "terraform init -input=false -reconfigure -backend-config=envs/${params.TARGET_ENV}.backend.hcl"
             script {
-              if (params.RUN_IMPORT) {
+              def inState = sh(script: "terraform state list | grep -q '^aws_s3_bucket.loki\$'", returnStatus: true) == 0
+              if (!inState) {
                 def bucket = sh(script: "grep '^bucket_name' envs/${params.TARGET_ENV}.tfvars | cut -d'\"' -f2", returnStdout: true).trim()
                 sh "terraform import -input=false -var-file=envs/${params.TARGET_ENV}.tfvars aws_s3_bucket.loki '${bucket}'"
               }
