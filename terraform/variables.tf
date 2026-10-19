@@ -49,6 +49,16 @@ variable "instance_type" {
   }
 }
 
+variable "key_name" {
+  description = "Name of an existing EC2 key pair, used for SSH access to the Loki host."
+  type        = string
+}
+
+variable "jumpbox_cidr" {
+  description = "Private IP (with /32) of the jumpbox allowed to SSH to the Loki host and reach port 3100."
+  type        = string
+}
+
 variable "disk_gb" {
   description = "Root gp3 volume size in GB. Holds the WAL, cache and temporary files, not the logs."
   type        = number
