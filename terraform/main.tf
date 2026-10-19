@@ -92,7 +92,7 @@ resource "aws_iam_role_policy" "loki_s3" {
   policy = data.aws_iam_policy_document.loki_s3.json
 }
 
-# Admin access through Session Manager, so no SSH key or port 22 is needed.
+# Session Manager access stays available as a fallback alongside SSH.
 resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.loki.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
@@ -108,7 +108,7 @@ resource "aws_iam_instance_profile" "loki" {
 
 resource "aws_security_group" "loki" {
   name        = "${local.name}-sg"
-  description = "Loki monolithic host: push and query on 3100 from EKS nodes and Grafana"
+  description = "Loki monolithic host: push and query on 3100 from EKS nodes, Grafana and the jumpbox"
   vpc_id      = var.vpc_id
   tags        = local.tags
 
@@ -118,6 +118,22 @@ resource "aws_security_group" "loki" {
     to_port         = 3100
     protocol        = "tcp"
     security_groups = [var.eks_node_security_group_id, var.grafana_security_group_id]
+  }
+
+  ingress {
+    description = "Loki HTTP access from jumpbox"
+    from_port   = 3100
+    to_port     = 3100
+    protocol    = "tcp"
+    cidr_blocks = [var.jumpbox_cidr]
+  }
+
+  ingress {
+    description = "SSH from jumpbox"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.jumpbox_cidr]
   }
 
   egress {
@@ -149,6 +165,7 @@ data "aws_ami" "al2023" {
 resource "aws_instance" "loki" {
   ami                         = data.aws_ami.al2023.id
   instance_type               = var.instance_type
+  key_name                    = var.key_name
   subnet_id                   = var.private_subnet_id
   vpc_security_group_ids      = [aws_security_group.loki.id]
   iam_instance_profile        = aws_iam_instance_profile.loki.name
