@@ -23,7 +23,7 @@ alloy:
         fieldRef:
           fieldPath: spec.nodeName
     - name: CLUSTER_NAME
-      value: "staging"
+      value: "non-prod-green-v2"
     - name: LOKI_PUSH_URL
       value: "http://13.41.18.169:3100/loki/api/v1/push"
     - name: LOG_NAMESPACE_REGEX
