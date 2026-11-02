@@ -28,6 +28,8 @@ alloy:
       value: "http://13.41.18.169:3100/loki/api/v1/push"
     - name: LOG_NAMESPACE_REGEX
       value: "^staging$"
+    - name: PROMETHEUS_WRITE_URL
+      value: "http://34.246.52.133:9091/api/v1/write"
 
 tolerations:
   - operator: Exists
