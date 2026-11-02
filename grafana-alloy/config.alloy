@@ -71,16 +71,6 @@ loki.process "pods" {
   stage.drop {
     expression = "GET /(healthz|readyz|livez)"
   }
-
-  // Count the lines that are sent on this node. No labels, so the series count stays fixed.
-  stage.metrics {
-    metric.counter {
-      name        = "staging_log_lines_total"
-      description = "Log lines read on this node after the drop rules"
-      match_all   = true
-      action      = "inc"
-    }
-  }
 }
 
 loki.write "default" {
@@ -96,43 +86,5 @@ loki.write "default" {
   wal {
     enabled         = true
     max_segment_age = "1h"
-  }
-}
-
-
-// Host metrics, replacing node-exporter. Same data, with the same job and instance labels
-// as the old staging-nodes job, so existing dashboards and alerts keep working.
-prometheus.exporter.unix "node" {
-  rootfs_path = "/host"
-}
-
-prometheus.scrape "node" {
-  targets         = prometheus.exporter.unix.node.targets
-  forward_to      = [prometheus.relabel.node.receiver]
-  scrape_interval = "15s"
-}
-
-prometheus.relabel "node" {
-  forward_to = [prometheus.remote_write.default.receiver]
-
-  rule {
-    target_label = "job"
-    replacement  = "staging-nodes"
-  }
-
-  rule {
-    target_label = "instance"
-    replacement  = sys.env("NODE_NAME")
-  }
-
-  rule {
-    target_label = "cluster"
-    replacement  = sys.env("CLUSTER_NAME")
-  }
-}
-
-prometheus.remote_write "default" {
-  endpoint {
-    url = sys.env("PROMETHEUS_WRITE_URL")
   }
 }
