@@ -6,7 +6,7 @@ locals {
   })
 }
 
-# ---------------------------------------------------------------- S3 storage
+# ----------------------------S3 storage------------------------------------
 
 resource "aws_s3_bucket" "loki" {
   bucket        = var.bucket_name
@@ -53,7 +53,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "loki" {
   }
 }
 
-# ------------------------------------------------------------ IAM for the host
+# ------------------------IAM for the host------------------------------------
 
 data "aws_iam_policy_document" "ec2_assume" {
   statement {
@@ -104,7 +104,7 @@ resource "aws_iam_instance_profile" "loki" {
   tags = local.tags
 }
 
-# ------------------------------------------------------------- network
+# ----------------------------network--------------------------------
 
 resource "aws_security_group" "loki" {
   name        = "${local.name}-sg"
@@ -145,7 +145,7 @@ resource "aws_security_group" "loki" {
   }
 }
 
-# ------------------------------------------------------------- Loki host
+# ---------------------------------Loki host----------------------------
 
 data "aws_ami" "al2023" {
   most_recent = true
